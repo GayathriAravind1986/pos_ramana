@@ -349,6 +349,9 @@ class OrderViewViewState extends State<OrderViewView> {
           ? updateGenerateOrderModel.invoice!.waiterName.toString()
           : 'N/A';
       String date = formatInvoiceDate(updateGenerateOrderModel.invoice?.date);
+      ipController.text =
+          updateGenerateOrderModel.invoice!.thermalIp.toString() ?? "";
+      debugPrint("ip:${ipController.text}");
       Navigator.of(context).pop();
       await showDialog(
         context: context,
@@ -496,7 +499,7 @@ class OrderViewViewState extends State<OrderViewView> {
   @override
   void initState() {
     super.initState();
-    ipController.text = "192.168.1.4";
+    // ipController.text = "192.168.1.4";
     if (kIsWeb) {
       printerService = MockPrinterService();
     } else if (Platform.isAndroid) {
