@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simple/Alertbox/snackBarAlert.dart';
 import 'package:simple/Bloc/ShiftClosing/shift_closing_bloc.dart';
 import 'package:simple/ModelClass/ShiftClosing/getShiftClosingModel.dart';
+import 'package:simple/ModelClass/ShiftClosing/postDailyClosingModel.dart';
 import 'package:simple/Reusable/color.dart';
 import 'package:simple/Reusable/text_styles.dart';
 import 'package:simple/UI/Authentication/login_screen.dart';
@@ -43,6 +44,7 @@ class ShiftViewView extends StatefulWidget {
 
 class ShiftViewViewState extends State<ShiftViewView> {
   GetShiftClosingModel getShiftClosingModel = GetShiftClosingModel();
+  PostDailyClosingModel postDailyClosingModel = PostDailyClosingModel();
   final upiController = TextEditingController();
   final dateController = TextEditingController();
   final cardController = TextEditingController();
@@ -51,6 +53,7 @@ class ShiftViewViewState extends State<ShiftViewView> {
   final cashInHandController = TextEditingController();
 
   bool shiftLoad = false;
+  bool saveLoad = false;
   String? errorMessage;
 
   void refreshShift() {
@@ -89,6 +92,30 @@ class ShiftViewViewState extends State<ShiftViewView> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  int cashDifference = 0;
+
+  void calculateCashDifference() {
+    int upi = int.tryParse(upiController.text) ?? 0;
+    int card = int.tryParse(cardController.text) ?? 0;
+    int hd = int.tryParse(hdController.text) ?? 0;
+    int cashInHand = int.tryParse(cashInHandController.text) ?? 0;
+
+    num totalSales = getShiftClosingModel.data!.summary!.totalSalesAmount ?? 0;
+    num totalExpenses =
+        getShiftClosingModel.data!.summary!.totalExpensesAmount ?? 0;
+
+    // Non-cash collected = UPI + Card + HD + Expenses
+    num nonCashTotal = upi + card + hd + totalExpenses;
+
+    // Cash expected = Total sales - non cash
+    num expectedCash = totalSales - nonCashTotal;
+
+    // Cash Difference → convert to int
+    cashDifference = (expectedCash - cashInHand).toInt();
+
+    setState(() {});
   }
 
   @override
@@ -236,7 +263,7 @@ class ShiftViewViewState extends State<ShiftViewView> {
                               "Non-Cash + Expenses",
                               "₹${getShiftClosingModel.data!.summary!.overallexpensesamt}",
                               Colors.yellow.shade100),
-                          buildSummary("Cash Difference", "₹0.00",
+                          buildSummary("Cash Difference", "₹$cashDifference",
                               Colors.green.shade100),
                         ],
                       ),
@@ -247,30 +274,92 @@ class ShiftViewViewState extends State<ShiftViewView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: greenColor,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 15),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "SAVE CLOSING",
-                              style: TextStyle(color: whiteColor),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-                          OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 15),
-                            ),
-                            onPressed: () {},
-                            child: const Text(
-                              "RESET",
-                              style: TextStyle(color: appPrimaryColor),
-                            ),
-                          ),
+                          saveLoad
+                              ? SpinKitCircle(color: appPrimaryColor, size: 30)
+                              : ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: greenColor,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 40, vertical: 15),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      saveLoad = true;
+                                    });
+                                    dateController.text =
+                                        "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
+                                    final parsed = DateFormat("dd/MM/yyyy")
+                                        .parse(dateController.text);
+                                    final backendDate =
+                                        DateFormat("yyyy-MM-dd").format(parsed);
+                                    debugPrint("date:$backendDate");
+                                    context
+                                        .read<ShiftClosingBloc>()
+                                        .add(SaveShiftClosing(
+                                          backendDate,
+                                          (getShiftClosingModel
+                                                      .data
+                                                      ?.summary
+                                                      ?.paymentMethods
+                                                      ?.expectedUpiAmount ??
+                                                  0)
+                                              .toString(),
+                                          upiController.text,
+                                          (getShiftClosingModel
+                                                      .data
+                                                      ?.summary
+                                                      ?.paymentMethods
+                                                      ?.expectedCardAmount ??
+                                                  0)
+                                              .toString(),
+                                          cardController.text,
+                                          (getShiftClosingModel.data?.summary
+                                                      ?.expectedHdAmount ??
+                                                  0)
+                                              .toString(),
+                                          hdController.text,
+                                          (getShiftClosingModel
+                                                      .data
+                                                      ?.summary
+                                                      ?.paymentMethods
+                                                      ?.totalcashAmount ??
+                                                  0)
+                                              .toString(),
+                                          (getShiftClosingModel
+                                                      .data
+                                                      ?.summary
+                                                      ?.paymentMethods
+                                                      ?.cashAmount ??
+                                                  0)
+                                              .toString(),
+                                          cashInHandController.text,
+                                          (getShiftClosingModel
+                                                      .data
+                                                      ?.summary
+                                                      ?.paymentMethods
+                                                      ?.expectedCashAmount ??
+                                                  0)
+                                              .toString(),
+                                          (getShiftClosingModel.data?.summary
+                                                      ?.totalSalesAmount ??
+                                                  0)
+                                              .toString(),
+                                          (getShiftClosingModel.data?.summary
+                                                      ?.totalExpensesAmount ??
+                                                  0)
+                                              .toString(),
+                                          (getShiftClosingModel.data?.summary
+                                                      ?.overallexpensesamt ??
+                                                  0)
+                                              .toString(),
+                                          cashDifference.toString(),
+                                        ));
+                                  },
+                                  child: const Text(
+                                    "SAVE CLOSING",
+                                    style: TextStyle(color: whiteColor),
+                                  ),
+                                ),
                         ],
                       ),
                     ],
@@ -295,12 +384,41 @@ class ShiftViewViewState extends State<ShiftViewView> {
               cashInHandController.text = getShiftClosingModel
                   .data!.summary!.paymentMethods!.cashAmount
                   .toString();
-              shiftLoad = false;
+              // cashDifference =
+              //     getShiftClosingModel.data!.summary!.shiftLoad = false;
+              setState(() {
+                shiftLoad = false;
+              });
             });
           }
           if (getShiftClosingModel.errorResponse?.isUnauthorized == true) {
             _handle401Error();
             return true;
+          }
+          return true;
+        }
+        if (current is PostDailyClosingModel) {
+          postDailyClosingModel = current;
+          if (postDailyClosingModel.errorResponse?.isUnauthorized == true) {
+            _handle401Error();
+            return true;
+          }
+          if (postDailyClosingModel.success == true) {
+            showToast("${postDailyClosingModel.message}", context, color: true);
+            dateController.text =
+                "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
+            final parsed = DateFormat("dd/MM/yyyy").parse(dateController.text);
+            final backendDate = DateFormat("yyyy-MM-dd").format(parsed);
+            debugPrint("date:$backendDate");
+            cashDifference = 0;
+            context.read<ShiftClosingBloc>().add(ShiftClosing(backendDate));
+            setState(() {
+              saveLoad = false;
+            });
+          } else {
+            setState(() {
+              saveLoad = false;
+            });
           }
           return true;
         }
@@ -344,6 +462,7 @@ class ShiftViewViewState extends State<ShiftViewView> {
                 hintText: "₹ 0",
                 border: OutlineInputBorder(),
               ),
+              onChanged: (_) => calculateCashDifference(),
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
             ),
@@ -396,6 +515,7 @@ class ShiftViewViewState extends State<ShiftViewView> {
             const SizedBox(height: 10),
             TextField(
               controller: cashInHandController,
+              onChanged: (_) => calculateCashDifference(),
               decoration: const InputDecoration(
                 hintText: "₹ -222",
                 border: OutlineInputBorder(),

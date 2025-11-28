@@ -8,16 +8,39 @@ class ShiftClosing extends ShiftClosingEvent {
   ShiftClosing(this.date);
 }
 
-// class SaveExpense extendsShiftClosingEvent {
-//   String date;
-//   String catId;
-//   String name;
-//   String method;
-//   String amount;
-//   String locId;
-//   SaveExpense(
-//       this.date, this.catId, this.name, this.method, this.amount, this.locId);
-// }
+class SaveShiftClosing extends ShiftClosingEvent {
+  String date;
+  String upiAmount;
+  String enteredUpiAmount;
+  String cardAmount;
+  String enteredCardAmount;
+  String hdAmount;
+  String enteredHdAmount;
+  String totalCashAmount;
+  String cashInHandAmount;
+  String enteredCashInHandAmount;
+  String expectedCashAmount;
+  String totalSalesAmount;
+  String totalExpensesAmount;
+  String overallExpensesAmount;
+  String differenceAmount;
+  SaveShiftClosing(
+      this.date,
+      this.upiAmount,
+      this.enteredUpiAmount,
+      this.cardAmount,
+      this.enteredCardAmount,
+      this.hdAmount,
+      this.enteredHdAmount,
+      this.totalCashAmount,
+      this.cashInHandAmount,
+      this.enteredCashInHandAmount,
+      this.expectedCashAmount,
+      this.totalSalesAmount,
+      this.totalExpensesAmount,
+      this.overallExpensesAmount,
+      this.differenceAmount);
+}
 
 class ShiftClosingBloc extends Bloc<ShiftClosingEvent, dynamic> {
   ShiftClosingBloc() : super(dynamic) {
@@ -28,15 +51,29 @@ class ShiftClosingBloc extends Bloc<ShiftClosingEvent, dynamic> {
         emit(error);
       });
     });
-    // on<SaveExpense>((event, emit) async {
-    //   await ApiProvider()
-    //       .postExpenseAPI(event.date, event.catId, event.name, event.method,
-    //       event.amount, event.locId)
-    //       .then((value) {
-    //     emit(value);
-    //   }).catchError((error) {
-    //     emit(error);
-    //   });
-    // });
+    on<SaveShiftClosing>((event, emit) async {
+      await ApiProvider()
+          .postDailyShiftAPI(
+              event.date,
+              event.upiAmount,
+              event.enteredUpiAmount,
+              event.cardAmount,
+              event.enteredCardAmount,
+              event.hdAmount,
+              event.enteredHdAmount,
+              event.totalCashAmount,
+              event.cashInHandAmount,
+              event.enteredCashInHandAmount,
+              event.expectedCashAmount,
+              event.totalSalesAmount,
+              event.totalExpensesAmount,
+              event.overallExpensesAmount,
+              event.differenceAmount)
+          .then((value) {
+        emit(value);
+      }).catchError((error) {
+        emit(error);
+      });
+    });
   }
 }

@@ -20,6 +20,7 @@ import 'package:simple/ModelClass/Order/get_order_list_today_model.dart';
 import 'package:simple/ModelClass/Products/get_products_cat_model.dart';
 import 'package:simple/ModelClass/Report/Get_report_with_ordertype_model.dart';
 import 'package:simple/ModelClass/ShiftClosing/getShiftClosingModel.dart';
+import 'package:simple/ModelClass/ShiftClosing/postDailyClosingModel.dart';
 import 'package:simple/ModelClass/ShopDetails/getStockMaintanencesModel.dart';
 import 'package:simple/ModelClass/StockIn/getLocationModel.dart';
 import 'package:simple/ModelClass/StockIn/getSupplierLocationModel.dart';
@@ -1190,6 +1191,82 @@ class ApiProvider {
     } catch (error) {
       final errorResponse = handleError(error);
       return GetShiftClosingModel()..errorResponse = errorResponse;
+    }
+  }
+
+  /// save ShiftClosing API Integration
+  Future<PostDailyClosingModel> postDailyShiftAPI(
+      String date,
+      String upiAmount,
+      String enteredUpiAmount,
+      String cardAmount,
+      String enteredCardAmount,
+      String hdAmount,
+      String enteredHdAmount,
+      String totalCashAmount,
+      String cashInHandAmount,
+      String enteredCashInHandAmount,
+      String expectedCashAmount,
+      String totalSalesAmount,
+      String totalExpensesAmount,
+      String overallExpensesAmount,
+      String differenceAmount) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+    debugPrint("token:$token");
+    try {
+      final dataMap = {
+        "date": date,
+        "UpiAmount": upiAmount,
+        "EnteredUpiAmount": enteredUpiAmount,
+        "CardAmount": cardAmount,
+        "EnteredCardAmount": enteredCardAmount,
+        "HdAmount": hdAmount,
+        "EnteredHdAmount": enteredHdAmount,
+        "totalcashAmount": totalCashAmount,
+        "CashInhandAmount": cashInHandAmount,
+        "EnteredCashInhandAmount": enteredCashInHandAmount,
+        "expectedCashAmount": expectedCashAmount,
+        "TotalSalesAmount": totalSalesAmount,
+        "TotalExpensesAmount": totalExpensesAmount,
+        "overallExpensesAmount": overallExpensesAmount,
+        "DifferenceAmount": differenceAmount
+      };
+      var data = json.encode(dataMap);
+      var dio = Dio();
+      var response = await dio.request(
+        '${Constants.baseUrl}api/dashboard/dailyclosing',
+        options: Options(
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
+        data: data,
+      );
+      if (response.statusCode == 201 && response.data != null) {
+        try {
+          PostDailyClosingModel postDailyClosingResponse =
+              PostDailyClosingModel.fromJson(response.data);
+          return postDailyClosingResponse;
+        } catch (e) {
+          return PostDailyClosingModel()
+            ..errorResponse = ErrorResponse(
+              message: "Failed to parse response: $e",
+            );
+        }
+      } else {
+        return PostDailyClosingModel()
+          ..errorResponse = ErrorResponse(
+            message: "Error: ${response.data['message'] ?? 'Unknown error'}",
+            statusCode: response.statusCode,
+          );
+      }
+    } on DioException catch (dioError) {
+      final errorResponse = handleError(dioError);
+      return PostDailyClosingModel()..errorResponse = errorResponse;
+    } catch (error) {
+      return PostDailyClosingModel()..errorResponse = handleError(error);
     }
   }
 

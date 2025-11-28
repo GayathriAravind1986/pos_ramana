@@ -994,7 +994,16 @@ class ExpenseViewViewState extends State<ExpenseViewView> {
                     int.parse(getSingleExpenseModel.data!.amount.toString())
                         .toString();
                 selectedPayment =
-                    getSingleExpenseModel.data!.paymentMethod ?? "";
+                    getSingleExpenseModel.data!.paymentMethod == "cash"
+                        ? "Cash"
+                        : getSingleExpenseModel.data!.paymentMethod == "card"
+                            ? "Card"
+                            : getSingleExpenseModel.data!.paymentMethod == "upi"
+                                ? "UPI"
+                                : getSingleExpenseModel.data!.paymentMethod ==
+                                        "bank_transfer"
+                                    ? "Bank Transfer"
+                                    : "Other";
               }
               expenseShowLoad = false;
             });
