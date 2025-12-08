@@ -180,38 +180,6 @@ class ShiftViewViewState extends State<ShiftViewView> {
                                 border: OutlineInputBorder(),
                               ),
                               controller: dateController,
-                              onTap: () async {
-                                // DateTime? picked = await showDatePicker(
-                                //   context: context,
-                                //   firstDate: DateTime(2000),
-                                //   lastDate: DateTime(2100),
-                                //   initialDate: DateTime.now(),
-                                //   builder: (context, child) {
-                                //     return Theme(
-                                //       data: Theme.of(context).copyWith(
-                                //         colorScheme: ColorScheme.light(
-                                //           primary: appPrimaryColor,
-                                //           onPrimary: whiteColor,
-                                //           onSurface: blackColor,
-                                //         ),
-                                //         textButtonTheme: TextButtonThemeData(
-                                //           style: TextButton.styleFrom(
-                                //             foregroundColor:
-                                //                 appPrimaryColor, // OK & Cancel button text color
-                                //           ),
-                                //         ),
-                                //       ),
-                                //       child: child!,
-                                //     );
-                                // },
-                                // );
-                                // if (picked != null) {
-                                //   setState(() {
-                                //     // selectedDate =
-                                //     //     DateFormat("dd/MM/yyyy").format(picked);
-                                //   });
-                                // }
-                              },
                             ),
                           ),
                         ],

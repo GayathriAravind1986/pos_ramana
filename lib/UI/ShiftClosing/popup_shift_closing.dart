@@ -197,12 +197,10 @@ class _ThermalShiftClosingDialogState extends State<ThermalShiftClosingDialog> {
             child: Stack(
               children: [
                 Padding(
-                  padding: EdgeInsets.only(bottom: size.height * 0.2),
+                  padding: const EdgeInsets.only(bottom: 80),
                   child: SingleChildScrollView(
                     child: Container(
-                      width: size.width >= 600
-                          ? size.width * 0.55
-                          : size.width * 0.95,
+                      width: size.width * 0.4,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: whiteColor,
