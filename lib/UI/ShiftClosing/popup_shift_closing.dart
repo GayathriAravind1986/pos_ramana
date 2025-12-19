@@ -268,7 +268,7 @@ class _ThermalShiftClosingDialogState extends State<ThermalShiftClosingDialog> {
                   ),
                 ),
                 Positioned(
-                  bottom: 50,
+                  bottom: 20,
                   left: 16,
                   right: 16,
                   child: Row(

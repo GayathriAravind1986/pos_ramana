@@ -125,6 +125,8 @@ Widget getShiftClosingReceiptWidget({
           _buildThermalItemRow(2, "CARD", "₹$expCard", "₹$card"),
           _buildThermalItemRow(3, "HD", "₹$expHD", "₹$hd"),
           _buildThermalItemRow(4, "CASH", "₹$expCash", "₹$cashInHand"),
+          _buildThermalItemRow(
+              5, "Expense", "₹$totalExpenses", "₹$totalExpenses"),
           Divider(thickness: 4, color: blackColor),
           // _buildThermalTotalRow(
           //   "CashInHand",
@@ -136,16 +138,28 @@ Widget getShiftClosingReceiptWidget({
             isBold: true,
             double.parse(totalSales),
           ),
+          // _buildThermalTotalRow(
+          //   "Total Expense",
+          //   isBold: true,
+          //   double.parse(totalExpenses),
+          // ),
           _buildThermalTotalRow(
-            "Total Expense",
-            isBold: true,
-            double.parse(totalExpenses),
-          ),
-          _buildThermalTotalRow(
-            "NonCase+Expense",
+            "NonCash+Expense",
             isBold: true,
             double.parse(nonCashExpense),
           ),
+          Divider(thickness: 4, color: blackColor),
+          _buildThermalTotalRow(
+            "Expected Cash",
+            isBold: true,
+            double.parse(totalSales) - double.parse(nonCashExpense),
+          ),
+          _buildThermalTotalRow(
+            "Actual Cash",
+            isBold: true,
+            double.parse(cashInHand),
+          ),
+          Divider(thickness: 4, color: blackColor),
           _buildThermalTotalRow(
             "Cash Differences",
             isBold: true,
