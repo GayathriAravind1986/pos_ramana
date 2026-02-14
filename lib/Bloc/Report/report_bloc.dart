@@ -9,8 +9,11 @@ class ReportTodayList extends ReportTodayEvent {
   String tableId;
   String waiterId;
   String operatorId;
+  String? paymentMethod;
+
   ReportTodayList(
-      this.fromDate, this.toDate, this.tableId, this.waiterId, this.operatorId);
+      this.fromDate, this.toDate, this.tableId, this.waiterId, this.operatorId,
+      {this.paymentMethod});
 }
 
 class TableDine extends ReportTodayEvent {}
@@ -24,7 +27,7 @@ class ReportTodayBloc extends Bloc<ReportTodayEvent, dynamic> {
     on<ReportTodayList>((event, emit) async {
       await ApiProvider()
           .getReportTodayAPI(event.fromDate, event.toDate, event.tableId,
-              event.waiterId, event.operatorId)
+          event.waiterId, event.operatorId, event.paymentMethod)
           .then((value) {
         emit(value);
       }).catchError((error) {

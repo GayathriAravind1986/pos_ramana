@@ -8,6 +8,8 @@ import 'package:simple/Reusable/color.dart';
 import 'package:simple/Reusable/text_styles.dart';
 import 'package:simple/UI/Authentication/login_screen.dart';
 
+import 'order_number_dialog.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int selectedIndex;
   final Function(int) onTabSelected;
@@ -88,19 +90,30 @@ class CustomAppBarViewState extends State<CustomAppBarView> {
                 if (getStockMaintanencesModel.data?.name != null)
                   Flexible(
                     flex: 3,
-                    child: Text(
-                      getStockMaintanencesModel.data!.name.toString(),
-                      style: TextStyle(
-                        fontSize: isCompactMode ? 16 : 20,
-                        fontWeight: FontWeight.bold,
-                        color: appPrimaryColor,
+                    child: GestureDetector(
+                      onTap: () {
+                        showOrderNumberDialog(
+                          context,
+                        );
+                      },
+                      child: Tooltip(
+                        message: 'Click to change order number',
+                        child: Text(
+                          getStockMaintanencesModel.data!.name.toString(),
+                          style: TextStyle(
+                            fontSize: isCompactMode ? 16 : 20,
+                            fontWeight: FontWeight.bold,
+                            color: appPrimaryColor,
+                            decoration: TextDecoration.underline,
+                            decorationColor: appPrimaryColor.withOpacity(0.3),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   )
                 else
                   const SizedBox.shrink(),
-
                 const SizedBox(width: 30),
 
                 // Navigation Tabs

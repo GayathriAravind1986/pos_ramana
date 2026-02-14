@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:simple/Bloc/LastOrder/lastorderbloc.dart';
 import 'package:simple/Bloc/observer/observer.dart';
 import 'package:simple/Bloc/theme_cubit.dart';
 import 'package:simple/Reusable/color.dart';
@@ -14,7 +15,12 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
   Bloc.observer = AppBlocObserver();
-  runApp(const App());
+  runApp(MultiBlocProvider(
+    providers: [
+      BlocProvider(create: (_) => LastOrderBloc()),
+    ],
+    child: const App(),
+  ),);
 }
 
 class App extends StatelessWidget {

@@ -53,16 +53,18 @@ class ReportViewViewState extends State<ReportViewView> {
   dynamic selectedValue;
   dynamic selectedValueWaiter;
   dynamic selectedValueUser;
+  dynamic selectedPaymentMethod;
   dynamic tableId;
   dynamic waiterId;
   dynamic userId;
+  String? paymentMethodId;
   bool tableLoad = false;
   String? errorMessage;
   bool reportLoad = false;
   final String todayDisplayDate =
-      DateFormat('dd/MM/yyyy').format(DateTime.now()); // UI
+  DateFormat('dd/MM/yyyy').format(DateTime.now()); // UI
   final String todayApiDate =
-      DateFormat('yyyy-MM-dd').format(DateTime.now()); // API
+  DateFormat('yyyy-MM-dd').format(DateTime.now()); // API
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
   bool includeProduct = true;
@@ -71,13 +73,20 @@ class ReportViewViewState extends State<ReportViewView> {
   DateTime? _fromDate;
   DateTime? _toDate;
   final DateTime now = DateTime.now();
+
+  List<Map<String, dynamic>> paymentMethods = [
+    {'id': 'CASH', 'name': 'CASH'},
+    {'id': 'CARD', 'name': 'CARD'},
+    {'id': 'UPI', 'name': 'UPI'},
+  ];
+
   Future<void> _selectDate(BuildContext context, bool isFromDate) async {
     final DateTime now = DateTime.now();
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate:
-          isFromDate ? (_fromDate ?? now) : (_toDate ?? (_fromDate ?? now)),
+      isFromDate ? (_fromDate ?? now) : (_toDate ?? (_fromDate ?? now)),
       firstDate: isFromDate ? DateTime(2000) : (_fromDate ?? DateTime(2000)),
       lastDate: isFromDate ? (_toDate ?? now) : now,
       builder: (context, child) {
@@ -112,38 +121,81 @@ class ReportViewViewState extends State<ReportViewView> {
           _toDate = picked;
           toDateController.text = DateFormat('dd/MM/yyyy').format(_toDate!);
         }
-        if (_fromDate != null && _toDate != null) {
-          String formattedFromDate =
-              DateFormat('yyyy-MM-dd').format(_fromDate!);
-          String formattedToDate = DateFormat('yyyy-MM-dd').format(_toDate!);
 
-          context.read<ReportTodayBloc>().add(
-                ReportTodayList(formattedFromDate, formattedToDate,
-                    tableId ?? "", waiterId ?? "", userId ?? ""),
-              );
-        } else if (_fromDate != null && _toDate == null) {
-          String formattedFromDate =
-              DateFormat('yyyy-MM-dd').format(_fromDate!);
-          String formattedToDate = DateFormat('yyyy-MM-dd').format(now);
+        String formattedFromDate = _fromDate != null
+            ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+            : todayApiDate;
+        String formattedToDate = _toDate != null
+            ? DateFormat('yyyy-MM-dd').format(_toDate!)
+            : todayApiDate;
 
-          context.read<ReportTodayBloc>().add(
-                ReportTodayList(formattedFromDate, formattedToDate,
-                    tableId ?? "", waiterId ?? "", userId ?? ""),
-              );
-        }
+        context.read<ReportTodayBloc>().add(
+          ReportTodayList(
+            formattedFromDate,
+            formattedToDate,
+            tableId ?? "",
+            waiterId ?? "",
+            userId ?? "",
+            paymentMethod: paymentMethodId,
+          ),
+        );
       });
     }
   }
 
   void refreshReport() {
     if (!mounted || !context.mounted) return;
+
+    String fromDateToUse = _fromDate != null
+        ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+        : todayApiDate;
+    String toDateToUse = _toDate != null
+        ? DateFormat('yyyy-MM-dd').format(_toDate!)
+        : todayApiDate;
+
     context.read<ReportTodayBloc>().add(
-          ReportTodayList(todayApiDate, todayApiDate, tableId ?? "",
-              waiterId ?? "", userId ?? ""),
-        );
+      ReportTodayList(
+        fromDateToUse,
+        toDateToUse,
+        tableId ?? "",
+        waiterId ?? "",
+        userId ?? "",
+        paymentMethod: paymentMethodId,
+      ),
+    );
     setState(() {
       reportLoad = true;
     });
+  }
+
+  void _onPaymentMethodChanged(String? newValue) {
+    if (newValue != null) {
+      setState(() {
+        selectedPaymentMethod = newValue;
+        final selectedItem = paymentMethods.firstWhere(
+              (item) => item['name'] == newValue,
+        );
+        paymentMethodId = selectedItem['id'];
+
+        String fromDateToUse = _fromDate != null
+            ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+            : todayApiDate;
+        String toDateToUse = _toDate != null
+            ? DateFormat('yyyy-MM-dd').format(_toDate!)
+            : todayApiDate;
+
+        context.read<ReportTodayBloc>().add(
+          ReportTodayList(
+            fromDateToUse,
+            toDateToUse,
+            tableId ?? "",
+            waiterId ?? "",
+            userId ?? "",
+            paymentMethod: paymentMethodId,
+          ),
+        );
+      });
+    }
   }
 
   @override
@@ -168,9 +220,14 @@ class ReportViewViewState extends State<ReportViewView> {
         toDateController.text = todayDisplayDate;
       });
       context.read<ReportTodayBloc>().add(
-            ReportTodayList(todayApiDate, todayApiDate, tableId ?? "",
-                waiterId ?? "", userId ?? ""),
-          );
+        ReportTodayList(
+          todayApiDate,
+          todayApiDate,
+          "",
+          "", "",
+          paymentMethod: null,
+        ),
+      );
     }
   }
 
@@ -179,14 +236,26 @@ class ReportViewViewState extends State<ReportViewView> {
       selectedValue = null;
       selectedValueWaiter = null;
       selectedValueUser = null;
+      selectedPaymentMethod = null;
       tableId = null;
       waiterId = null;
       userId = null;
+      paymentMethodId = null;
+      _fromDate = null;
+      _toDate = null;
+      fromDateController.clear();
+      toDateController.clear();
     });
+
     context.read<ReportTodayBloc>().add(
-          ReportTodayList(todayApiDate, todayApiDate, tableId ?? "",
-              waiterId ?? "", userId ?? ""),
-        );
+      ReportTodayList(
+        todayApiDate,
+        todayApiDate,
+        "",
+        "", "",
+        paymentMethod: null,
+      ),
+    );
     context.read<ReportTodayBloc>().add(TableDine());
     context.read<ReportTodayBloc>().add(WaiterDine());
     context.read<ReportTodayBloc>().add(UserDetails());
@@ -196,14 +265,13 @@ class ReportViewViewState extends State<ReportViewView> {
   @override
   void dispose() {
     super.dispose();
-    fromDateController.clear;
-    toDateController.clear;
+    fromDateController.dispose();
+    toDateController.dispose();
   }
 
   bool _hasReportData() {
     if (getReportModel.orderTypes == null) return false;
 
-    // Check if any order type has data
     bool hasLineData =
         getReportModel.orderTypes!.line?.data?.isNotEmpty ?? false;
     bool hasParcelData =
@@ -271,29 +339,30 @@ class ReportViewViewState extends State<ReportViewView> {
                           border: OutlineInputBorder(),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                                BorderSide(color: appPrimaryColor, width: 2),
+                            BorderSide(color: appPrimaryColor, width: 2),
                           ),
                           suffixIcon: fromDateController.text.isNotEmpty
                               ? IconButton(
-                                  icon: Icon(Icons.clear),
-                                  onPressed: () {
-                                    setState(() {
-                                      fromDateController.clear();
-                                      _fromDate = null;
-                                      if (fromDateController.text.isEmpty &&
-                                          toDateController.text.isEmpty) {
-                                        context.read<ReportTodayBloc>().add(
-                                              ReportTodayList(
-                                                  todayApiDate,
-                                                  todayApiDate,
-                                                  tableId ?? "",
-                                                  waiterId ?? "",
-                                                  userId ?? ""),
-                                            );
-                                      }
-                                    });
-                                  },
-                                )
+                            icon: Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                fromDateController.clear();
+                                _fromDate = null;
+                                if (fromDateController.text.isEmpty &&
+                                    toDateController.text.isEmpty) {
+                                  context.read<ReportTodayBloc>().add(
+                                    ReportTodayList(
+                                      todayApiDate,
+                                      todayApiDate,
+                                      tableId ?? "",
+                                      waiterId ?? "",
+                                      userId ?? "",
+                                      paymentMethod: paymentMethodId,),
+                                  );
+                                }
+                              });
+                            },
+                          )
                               : null,
                         ),
                         onTap: () => _selectDate(context, true),
@@ -318,29 +387,30 @@ class ReportViewViewState extends State<ReportViewView> {
                           border: OutlineInputBorder(),
                           focusedBorder: OutlineInputBorder(
                             borderSide:
-                                BorderSide(color: appPrimaryColor, width: 2),
+                            BorderSide(color: appPrimaryColor, width: 2),
                           ),
                           suffixIcon: toDateController.text.isNotEmpty
                               ? IconButton(
-                                  icon: Icon(Icons.clear),
-                                  onPressed: () {
-                                    setState(() {
-                                      toDateController.clear();
-                                      _toDate = null;
-                                      if (fromDateController.text.isEmpty &&
-                                          toDateController.text.isEmpty) {
-                                        context.read<ReportTodayBloc>().add(
-                                              ReportTodayList(
-                                                  todayApiDate,
-                                                  todayApiDate,
-                                                  tableId ?? "",
-                                                  waiterId ?? "",
-                                                  userId ?? ""),
-                                            );
-                                      }
-                                    });
-                                  },
-                                )
+                            icon: Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                toDateController.clear();
+                                _toDate = null;
+                                if (fromDateController.text.isEmpty &&
+                                    toDateController.text.isEmpty) {
+                                  context.read<ReportTodayBloc>().add(
+                                    ReportTodayList(
+                                      todayApiDate,
+                                      todayApiDate,
+                                      tableId ?? "",
+                                      waiterId ?? "",
+                                      userId ?? "",
+                                      paymentMethod: paymentMethodId,),
+                                  );
+                                }
+                              });
+                            },
+                          )
                               : null,
                         ),
                         onTap: () => _selectDate(context, false),
@@ -357,8 +427,8 @@ class ReportViewViewState extends State<ReportViewView> {
                       margin: const EdgeInsets.only(right: 6),
                       child: DropdownButtonFormField<String>(
                         value: (getTableModel.data?.any(
-                                    (item) => item.name == selectedValue) ??
-                                false)
+                                (item) => item.name == selectedValue) ??
+                            false)
                             ? selectedValue
                             : null,
                         icon: const Icon(
@@ -393,14 +463,23 @@ class ReportViewViewState extends State<ReportViewView> {
                               final selectedItem = getTableModel.data
                                   ?.firstWhere((item) => item.name == newValue);
                               tableId = selectedItem?.id.toString();
+
+                              String fromDateToUse = _fromDate != null
+                                  ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+                                  : todayApiDate;
+                              String toDateToUse = _toDate != null
+                                  ? DateFormat('yyyy-MM-dd').format(_toDate!)
+                                  : todayApiDate;
+
                               context.read<ReportTodayBloc>().add(
-                                    ReportTodayList(
-                                        todayApiDate,
-                                        todayApiDate,
-                                        tableId ?? "",
-                                        waiterId ?? "",
-                                        userId ?? ""),
-                                  );
+                                ReportTodayList(
+                                  fromDateToUse,
+                                  toDateToUse,
+                                  tableId ?? "",
+                                  waiterId ?? "",
+                                  userId ?? "",
+                                  paymentMethod: paymentMethodId,),
+                              );
                             });
                           }
                         },
@@ -419,8 +498,8 @@ class ReportViewViewState extends State<ReportViewView> {
                       margin: const EdgeInsets.only(left: 8),
                       child: DropdownButtonFormField<String>(
                         value: (getWaiterModel.data?.any((item) =>
-                                    item.name == selectedValueWaiter) ??
-                                false)
+                        item.name == selectedValueWaiter) ??
+                            false)
                             ? selectedValueWaiter
                             : null,
                         icon: const Icon(
@@ -455,14 +534,23 @@ class ReportViewViewState extends State<ReportViewView> {
                               final selectedItem = getWaiterModel.data
                                   ?.firstWhere((item) => item.name == newValue);
                               waiterId = selectedItem?.id.toString();
+
+                              String fromDateToUse = _fromDate != null
+                                  ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+                                  : todayApiDate;
+                              String toDateToUse = _toDate != null
+                                  ? DateFormat('yyyy-MM-dd').format(_toDate!)
+                                  : todayApiDate;
+
                               context.read<ReportTodayBloc>().add(
-                                    ReportTodayList(
-                                        todayApiDate,
-                                        todayApiDate,
-                                        tableId ?? "",
-                                        waiterId ?? "",
-                                        userId ?? ""),
-                                  );
+                                ReportTodayList(
+                                  fromDateToUse,
+                                  toDateToUse,
+                                  tableId ?? "",
+                                  waiterId ?? "",
+                                  userId ?? "",
+                                  paymentMethod: paymentMethodId,),
+                              );
                             });
                           }
                         },
@@ -481,8 +569,8 @@ class ReportViewViewState extends State<ReportViewView> {
                       margin: const EdgeInsets.all(10),
                       child: DropdownButtonFormField<String>(
                         value: (getUserModel.data?.any(
-                                    (item) => item.name == selectedValueUser) ??
-                                false)
+                                (item) => item.name == selectedValueUser) ??
+                            false)
                             ? selectedValueUser
                             : null,
                         icon: const Icon(
@@ -518,14 +606,23 @@ class ReportViewViewState extends State<ReportViewView> {
                                   ?.firstWhere((item) => item.name == newValue);
                               userId = selectedItem?.id.toString();
                             });
+
+                            String fromDateToUse = _fromDate != null
+                                ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+                                : todayApiDate;
+                            String toDateToUse = _toDate != null
+                                ? DateFormat('yyyy-MM-dd').format(_toDate!)
+                                : todayApiDate;
+
                             context.read<ReportTodayBloc>().add(
-                                  ReportTodayList(
-                                      todayApiDate,
-                                      todayApiDate,
-                                      tableId ?? "",
-                                      waiterId ?? "",
-                                      userId ?? ""),
-                                );
+                              ReportTodayList(
+                                fromDateToUse,
+                                toDateToUse,
+                                tableId ?? "",
+                                waiterId ?? "",
+                                userId ?? "",
+                                paymentMethod: paymentMethodId,),
+                            );
                           }
                         },
                         hint: Text(
@@ -540,7 +637,46 @@ class ReportViewViewState extends State<ReportViewView> {
                   ),
                 ],
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedPaymentMethod,
+                icon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: appPrimaryColor,
+                ),
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Payment Method',
+                  labelStyle: TextStyle(color: greyColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: appPrimaryColor,
+                    ),
+                  ),
+                ),
+                items: paymentMethods.map((method) {
+                  return DropdownMenuItem<String>(
+                    value: method['name'],
+                    child: Text(
+                      method['name'],
+                      style: MyTextStyle.f14(
+                        blackColor,
+                        weight: FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: _onPaymentMethodChanged,
+                hint: Text(
+                  '-- Select Payment Method --',
+                  style: MyTextStyle.f14(
+                    blackColor,
+                    weight: FontWeight.normal,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
               Row(
                 children: [
                   Checkbox(
@@ -558,726 +694,726 @@ class ReportViewViewState extends State<ReportViewView> {
               SizedBox(height: 24),
               reportLoad
                   ? Container(
-                      padding: EdgeInsets.only(
-                          top: MediaQuery.of(context).size.height * 0.1),
-                      alignment: Alignment.center,
-                      child: const SpinKitChasingDots(
-                          color: appPrimaryColor, size: 30))
+                  padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).size.height * 0.1),
+                  alignment: Alignment.center,
+                  child: const SpinKitChasingDots(
+                      color: appPrimaryColor, size: 30))
                   : getReportModel.orderTypes == null
-                      ? Container(
-                          padding: EdgeInsets.only(
-                              top: MediaQuery.of(context).size.height * 0.3),
-                          alignment: Alignment.center,
-                          child: Text(
-                            "No Report found !!!",
-                            style: MyTextStyle.f16(
-                              greyColor,
-                              weight: FontWeight.w500,
-                            ),
-                          ))
-                      : Column(
-                          children: [
-                            if (includeProduct) ...[
-                              if (getReportModel
-                                  .orderTypes!.line!.data!.isNotEmpty) ...[
-                                Text(
-                                  "LINE",
-                                  style: MyTextStyle.f16(
-                                    blackColor,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Table(
-                                  border: TableBorder.all(),
-                                  columnWidths: const {
-                                    0: FixedColumnWidth(50),
-                                    1: FlexColumnWidth(),
-                                    2: FixedColumnWidth(75),
-                                    3: FixedColumnWidth(100),
-                                  },
-                                  children: [
-                                    const TableRow(
-                                      decoration:
-                                          BoxDecoration(color: appPrimaryColor),
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("S.No",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Product Name",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Quantity",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Amount",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...List.generate(
-                                        getReportModel.orderTypes!.line!.data!
-                                            .length, (index) {
-                                      final item = getReportModel
-                                          .orderTypes!.line!.data![index];
-                                      return TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text("${index + 1}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Text(item.productName ?? ""),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(
-                                                    "${item.totalQty ?? ""}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(item.totalAmount
-                                                        ?.toStringAsFixed(2) ??
-                                                    "")),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                          color: whiteColor),
-                                      children: [
-                                        const SizedBox(), // empty under S.No
-                                        const Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Line Total",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "${getReportModel.orderTypes!.line!.totalQty}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "₹ ${getReportModel.orderTypes!.line!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (getReportModel
-                                  .orderTypes!.parcel!.data!.isNotEmpty) ...[
-                                Text(
-                                  "PARCEL",
-                                  style: MyTextStyle.f16(
-                                    blackColor,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Table(
-                                  border: TableBorder.all(),
-                                  columnWidths: const {
-                                    0: FixedColumnWidth(50),
-                                    1: FlexColumnWidth(),
-                                    2: FixedColumnWidth(75),
-                                    3: FixedColumnWidth(100),
-                                  },
-                                  children: [
-                                    const TableRow(
-                                      decoration:
-                                          BoxDecoration(color: appPrimaryColor),
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("S.No",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Product Name",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Quantity",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Amount",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...List.generate(
-                                        getReportModel.orderTypes!.parcel!.data!
-                                            .length, (index) {
-                                      final item = getReportModel
-                                          .orderTypes!.parcel!.data![index];
-                                      return TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text("${index + 1}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Text(item.productName ?? ""),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(
-                                                    "${item.totalQty ?? ""}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(item.totalAmount
-                                                        ?.toStringAsFixed(2) ??
-                                                    "")),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                          color: whiteColor),
-                                      children: [
-                                        const SizedBox(), // empty under S.No
-                                        const Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Parcel Total",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "${getReportModel.orderTypes!.parcel!.totalQty}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "₹ ${getReportModel.orderTypes!.parcel!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (getReportModel
-                                  .orderTypes!.ac!.data!.isNotEmpty) ...[
-                                Text(
-                                  "AC",
-                                  style: MyTextStyle.f16(
-                                    blackColor,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Table(
-                                  border: TableBorder.all(),
-                                  columnWidths: const {
-                                    0: FixedColumnWidth(50),
-                                    1: FlexColumnWidth(),
-                                    2: FixedColumnWidth(75),
-                                    3: FixedColumnWidth(100),
-                                  },
-                                  children: [
-                                    const TableRow(
-                                      decoration:
-                                          BoxDecoration(color: appPrimaryColor),
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("S.No",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Product Name",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Quantity",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Amount",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...List.generate(
-                                        getReportModel.orderTypes!.ac!.data!
-                                            .length, (index) {
-                                      final item = getReportModel
-                                          .orderTypes!.ac!.data![index];
-                                      return TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text("${index + 1}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Text(item.productName ?? ""),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(
-                                                    "${item.totalQty ?? ""}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(item.totalAmount
-                                                        ?.toStringAsFixed(2) ??
-                                                    "")),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                          color: whiteColor),
-                                      children: [
-                                        const SizedBox(), // empty under S.No
-                                        const Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("AC Total",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "${getReportModel.orderTypes!.ac!.totalQty}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "₹ ${getReportModel.orderTypes!.ac!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (getReportModel
-                                  .orderTypes!.hd!.data!.isNotEmpty) ...[
-                                Text(
-                                  "HD",
-                                  style: MyTextStyle.f16(
-                                    blackColor,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Table(
-                                  border: TableBorder.all(),
-                                  columnWidths: const {
-                                    0: FixedColumnWidth(50),
-                                    1: FlexColumnWidth(),
-                                    2: FixedColumnWidth(75),
-                                    3: FixedColumnWidth(100),
-                                  },
-                                  children: [
-                                    const TableRow(
-                                      decoration:
-                                          BoxDecoration(color: appPrimaryColor),
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("S.No",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Product Name",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Quantity",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Amount",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...List.generate(
-                                        getReportModel.orderTypes!.hd!.data!
-                                            .length, (index) {
-                                      final item = getReportModel
-                                          .orderTypes!.hd!.data![index];
-                                      return TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text("${index + 1}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Text(item.productName ?? ""),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(
-                                                    "${item.totalQty ?? ""}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(item.totalAmount
-                                                        ?.toStringAsFixed(2) ??
-                                                    "")),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                          color: whiteColor),
-                                      children: [
-                                        const SizedBox(), // empty under S.No
-                                        const Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("HD Total",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "${getReportModel.orderTypes!.hd!.totalQty}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "₹ ${getReportModel.orderTypes!.hd!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (getReportModel
-                                  .orderTypes!.swiggy!.data!.isNotEmpty) ...[
-                                Text(
-                                  "SWIGGY",
-                                  style: MyTextStyle.f16(
-                                    blackColor,
-                                    weight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Table(
-                                  border: TableBorder.all(),
-                                  columnWidths: const {
-                                    0: FixedColumnWidth(50),
-                                    1: FlexColumnWidth(),
-                                    2: FixedColumnWidth(75),
-                                    3: FixedColumnWidth(100),
-                                  },
-                                  children: [
-                                    const TableRow(
-                                      decoration:
-                                          BoxDecoration(color: appPrimaryColor),
-                                      children: [
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("S.No",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Product Name",
-                                              style: TextStyle(
-                                                  color: whiteColor,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Quantity",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text("Amount",
-                                                style: TextStyle(
-                                                    color: whiteColor,
-                                                    fontWeight:
-                                                        FontWeight.bold)),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...List.generate(
-                                        getReportModel.orderTypes!.swiggy!.data!
-                                            .length, (index) {
-                                      final item = getReportModel
-                                          .orderTypes!.swiggy!.data![index];
-                                      return TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text("${index + 1}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Text(item.productName ?? ""),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(
-                                                    "${item.totalQty ?? ""}")),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8),
-                                            child: Center(
-                                                child: Text(item.totalAmount
-                                                        ?.toStringAsFixed(2) ??
-                                                    "")),
-                                          ),
-                                        ],
-                                      );
-                                    }),
-                                    TableRow(
-                                      decoration: const BoxDecoration(
-                                          color: whiteColor),
-                                      children: [
-                                        const SizedBox(), // empty under S.No
-                                        const Padding(
-                                          padding: EdgeInsets.all(8),
-                                          child: Text("Swiggy Total",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "${getReportModel.orderTypes!.swiggy!.totalQty}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Center(
-                                            child: Text(
-                                              "₹ ${getReportModel.orderTypes!.swiggy!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                            ],
-                            if (_hasReportData())
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      "Total Quantity: ${getReportModel.finalQty}",
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
-                                    ),
-                                    Text(
-                                      "Total Amount: ₹${getReportModel.finalAmount?.toStringAsFixed(2) ?? '0.00'}",
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (_hasReportData()) const SizedBox(height: 16),
-                            if (_hasReportData())
-                              Center(
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) =>
-                                          ThermalReportReceiptDialog(
-                                              getReportModel,
-                                              showItems: includeProduct),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.print),
-                                  label: const Text("Print"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: greenColor,
-                                    foregroundColor: whiteColor,
-                                  ),
-                                ),
-                              ),
-                          ],
+                  ? Container(
+                  padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).size.height * 0.3),
+                  alignment: Alignment.center,
+                  child: Text(
+                    "No Report found !!!",
+                    style: MyTextStyle.f16(
+                      greyColor,
+                      weight: FontWeight.w500,
+                    ),
+                  ))
+                  : Column(
+                children: [
+                  if (includeProduct) ...[
+                    if (getReportModel
+                        .orderTypes!.line!.data!.isNotEmpty) ...[
+                      Text(
+                        "LINE",
+                        style: MyTextStyle.f16(
+                          blackColor,
+                          weight: FontWeight.w500,
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      Table(
+                        border: TableBorder.all(),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(75),
+                          3: FixedColumnWidth(100),
+                        },
+                        children: [
+                          const TableRow(
+                            decoration:
+                            BoxDecoration(color: appPrimaryColor),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("S.No",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Product Name",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Quantity",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Amount",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...List.generate(
+                              getReportModel.orderTypes!.line!.data!
+                                  .length, (index) {
+                            final item = getReportModel
+                                .orderTypes!.line!.data![index];
+                            return TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text("${index + 1}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(item.productName ?? ""),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(
+                                          "${item.totalQty ?? ""}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(item.totalAmount
+                                          ?.toStringAsFixed(2) ??
+                                          "")),
+                                ),
+                              ],
+                            );
+                          }),
+                          TableRow(
+                            decoration: const BoxDecoration(
+                                color: whiteColor),
+                            children: [
+                              const SizedBox(), // empty under S.No
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Line Total",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "${getReportModel.orderTypes!.line!.totalQty}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "₹ ${getReportModel.orderTypes!.line!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (getReportModel
+                        .orderTypes!.parcel!.data!.isNotEmpty) ...[
+                      Text(
+                        "PARCEL",
+                        style: MyTextStyle.f16(
+                          blackColor,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Table(
+                        border: TableBorder.all(),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(75),
+                          3: FixedColumnWidth(100),
+                        },
+                        children: [
+                          const TableRow(
+                            decoration:
+                            BoxDecoration(color: appPrimaryColor),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("S.No",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Product Name",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Quantity",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Amount",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...List.generate(
+                              getReportModel.orderTypes!.parcel!.data!
+                                  .length, (index) {
+                            final item = getReportModel
+                                .orderTypes!.parcel!.data![index];
+                            return TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text("${index + 1}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(item.productName ?? ""),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(
+                                          "${item.totalQty ?? ""}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(item.totalAmount
+                                          ?.toStringAsFixed(2) ??
+                                          "")),
+                                ),
+                              ],
+                            );
+                          }),
+                          TableRow(
+                            decoration: const BoxDecoration(
+                                color: whiteColor),
+                            children: [
+                              const SizedBox(), // empty under S.No
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Parcel Total",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "${getReportModel.orderTypes!.parcel!.totalQty}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "₹ ${getReportModel.orderTypes!.parcel!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (getReportModel
+                        .orderTypes!.ac!.data!.isNotEmpty) ...[
+                      Text(
+                        "AC",
+                        style: MyTextStyle.f16(
+                          blackColor,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Table(
+                        border: TableBorder.all(),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(75),
+                          3: FixedColumnWidth(100),
+                        },
+                        children: [
+                          const TableRow(
+                            decoration:
+                            BoxDecoration(color: appPrimaryColor),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("S.No",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Product Name",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Quantity",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Amount",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...List.generate(
+                              getReportModel.orderTypes!.ac!.data!
+                                  .length, (index) {
+                            final item = getReportModel
+                                .orderTypes!.ac!.data![index];
+                            return TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text("${index + 1}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(item.productName ?? ""),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(
+                                          "${item.totalQty ?? ""}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(item.totalAmount
+                                          ?.toStringAsFixed(2) ??
+                                          "")),
+                                ),
+                              ],
+                            );
+                          }),
+                          TableRow(
+                            decoration: const BoxDecoration(
+                                color: whiteColor),
+                            children: [
+                              const SizedBox(), // empty under S.No
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("AC Total",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "${getReportModel.orderTypes!.ac!.totalQty}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "₹ ${getReportModel.orderTypes!.ac!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (getReportModel
+                        .orderTypes!.hd!.data!.isNotEmpty) ...[
+                      Text(
+                        "HD",
+                        style: MyTextStyle.f16(
+                          blackColor,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Table(
+                        border: TableBorder.all(),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(75),
+                          3: FixedColumnWidth(100),
+                        },
+                        children: [
+                          const TableRow(
+                            decoration:
+                            BoxDecoration(color: appPrimaryColor),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("S.No",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Product Name",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Quantity",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Amount",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...List.generate(
+                              getReportModel.orderTypes!.hd!.data!
+                                  .length, (index) {
+                            final item = getReportModel
+                                .orderTypes!.hd!.data![index];
+                            return TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text("${index + 1}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(item.productName ?? ""),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(
+                                          "${item.totalQty ?? ""}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(item.totalAmount
+                                          ?.toStringAsFixed(2) ??
+                                          "")),
+                                ),
+                              ],
+                            );
+                          }),
+                          TableRow(
+                            decoration: const BoxDecoration(
+                                color: whiteColor),
+                            children: [
+                              const SizedBox(), // empty under S.No
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("HD Total",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "${getReportModel.orderTypes!.hd!.totalQty}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "₹ ${getReportModel.orderTypes!.hd!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (getReportModel
+                        .orderTypes!.swiggy!.data!.isNotEmpty) ...[
+                      Text(
+                        "SWIGGY",
+                        style: MyTextStyle.f16(
+                          blackColor,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Table(
+                        border: TableBorder.all(),
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(75),
+                          3: FixedColumnWidth(100),
+                        },
+                        children: [
+                          const TableRow(
+                            decoration:
+                            BoxDecoration(color: appPrimaryColor),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("S.No",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Product Name",
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Quantity",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text("Amount",
+                                      style: TextStyle(
+                                          color: whiteColor,
+                                          fontWeight:
+                                          FontWeight.bold)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...List.generate(
+                              getReportModel.orderTypes!.swiggy!.data!
+                                  .length, (index) {
+                            final item = getReportModel
+                                .orderTypes!.swiggy!.data![index];
+                            return TableRow(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text("${index + 1}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(item.productName ?? ""),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(
+                                          "${item.totalQty ?? ""}")),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Center(
+                                      child: Text(item.totalAmount
+                                          ?.toStringAsFixed(2) ??
+                                          "")),
+                                ),
+                              ],
+                            );
+                          }),
+                          TableRow(
+                            decoration: const BoxDecoration(
+                                color: whiteColor),
+                            children: [
+                              const SizedBox(), // empty under S.No
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Text("Swiggy Total",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "${getReportModel.orderTypes!.swiggy!.totalQty}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Center(
+                                  child: Text(
+                                    "₹ ${getReportModel.orderTypes!.swiggy!.totalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  if (_hasReportData())
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            "Total Quantity: ${getReportModel.finalQty}",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                          Text(
+                            "Total Amount: ₹${getReportModel.finalAmount?.toStringAsFixed(2) ?? '0.00'}",
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_hasReportData()) const SizedBox(height: 16),
+                  if (_hasReportData())
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                                ThermalReportReceiptDialog(
+                                    getReportModel,
+                                    showItems: includeProduct),
+                          );
+                        },
+                        icon: const Icon(Icons.print),
+                        label: const Text("Print"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: greenColor,
+                          foregroundColor: whiteColor,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
@@ -1390,7 +1526,7 @@ class ReportViewViewState extends State<ReportViewView> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 }

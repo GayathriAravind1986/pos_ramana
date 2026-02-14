@@ -58,18 +58,23 @@ class OrderTabViewViewState extends State<OrderTabViewView>
   dynamic selectedValue;
   dynamic selectedValueWaiter;
   dynamic selectedValueUser;
+  dynamic selectedPaymentMode;
   dynamic tableId;
   dynamic waiterId;
   dynamic userId;
   dynamic operatorId;
+  dynamic paymentMode;
   bool tableLoad = false;
   bool isLoadingOrders = false;
   final todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
   String? fromDate;
 
+  // Payment modes list
+  final List<String> paymentModes = ['CASH', 'CARD', 'UPI'];
+
   final List<GlobalKey<OrderViewViewState>> _tabKeys = List.generate(
     6,
-    (index) => GlobalKey<OrderViewViewState>(),
+        (index) => GlobalKey<OrderViewViewState>(),
   );
 
   Future<void> getOperatorId() async {
@@ -91,9 +96,11 @@ class OrderTabViewViewState extends State<OrderTabViewView>
           selectedValue = null;
           selectedValueWaiter = null;
           selectedValueUser = null;
+          selectedPaymentMode = null;
           tableId = null;
           waiterId = null;
           userId = null;
+          paymentMode = null;
           hasRefreshedOrder = false;
           isLoadingOrders = true;
         });
@@ -108,15 +115,17 @@ class OrderTabViewViewState extends State<OrderTabViewView>
       selectedValue = null;
       selectedValueWaiter = null;
       selectedValueUser = null;
+      selectedPaymentMode = null;
       tableId = null;
       waiterId = null;
       userId = null;
+      paymentMode = null;
       hasRefreshedOrder = false;
       isLoadingOrders = true;
     });
     context.read<OrderTodayBloc>().add(
-          OrderTodayList(todayDate, todayDate, "", "", ""),
-        );
+      OrderTodayList(todayDate, todayDate, "", "", "", ""),
+    );
   }
 
   void _loadInitialData() {
@@ -127,15 +136,17 @@ class OrderTabViewViewState extends State<OrderTabViewView>
       selectedValue = null;
       selectedValueWaiter = null;
       selectedValueUser = null;
+      selectedPaymentMode = null;
       tableId = null;
       waiterId = null;
       userId = null;
+      paymentMode = null;
       hasRefreshedOrder = false;
       isLoadingOrders = true;
     });
     context.read<OrderTodayBloc>().add(
-          OrderTodayList(todayDate, todayDate, "", "", ""),
-        );
+      OrderTodayList(todayDate, todayDate, "", "", "", ""),
+    );
     context.read<OrderTodayBloc>().add(TableDine());
     context.read<OrderTodayBloc>().add(WaiterDine());
     context.read<OrderTodayBloc>().add(UserDetails());
@@ -149,14 +160,15 @@ class OrderTabViewViewState extends State<OrderTabViewView>
     });
     debugPrint("refreshTab");
     context.read<OrderTodayBloc>().add(
-          OrderTodayList(
-            todayDate,
-            todayDate,
-            tableId ?? "",
-            waiterId ?? "",
-            userId ?? "",
-          ),
-        );
+      OrderTodayList(
+        todayDate,
+        todayDate,
+        tableId ?? "",
+        waiterId ?? "",
+        userId ?? "",
+        paymentMode ?? "",
+      ),
+    );
   }
 
   void _refreshData() {
@@ -164,9 +176,11 @@ class OrderTabViewViewState extends State<OrderTabViewView>
       selectedValue = null;
       selectedValueWaiter = null;
       selectedValueUser = null;
+      selectedPaymentMode = null;
       tableId = null;
       waiterId = null;
       userId = null;
+      paymentMode = null;
       hasRefreshedOrder = false;
       isLoadingOrders = true; // Set loading state
     });
@@ -175,14 +189,15 @@ class OrderTabViewViewState extends State<OrderTabViewView>
     context.read<OrderTodayBloc>().add(WaiterDine());
     context.read<OrderTodayBloc>().add(UserDetails());
     context.read<OrderTodayBloc>().add(
-          OrderTodayList(
-            todayDate,
-            todayDate,
-            tableId ?? "",
-            waiterId ?? "",
-            userId ?? "",
-          ),
-        );
+      OrderTodayList(
+        todayDate,
+        todayDate,
+        tableId ?? "",
+        waiterId ?? "",
+        userId ?? "",
+        paymentMode ?? "",
+      ),
+    );
   }
 
   void _onFilterChanged() {
@@ -230,6 +245,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                 ],
               ),
             ),
+            // First row of dropdown labels
             Row(
               children: [
                 Expanded(
@@ -268,8 +284,21 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     ),
                   ),
                 ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Text(
+                      'Payment Mode',
+                      style: MyTextStyle.f14(
+                        blackColor,
+                        weight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
+            // Second row of dropdowns
             Row(
               children: [
                 Expanded(
@@ -277,9 +306,9 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     margin: const EdgeInsets.all(10),
                     child: DropdownButtonFormField<String>(
                       value: (getTableModel.data?.any(
-                                (item) => item.name == selectedValue,
-                              ) ??
-                              false)
+                            (item) => item.name == selectedValue,
+                      ) ??
+                          false)
                           ? selectedValue
                           : null,
                       icon: const Icon(
@@ -310,7 +339,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                           setState(() {
                             selectedValue = newValue;
                             final selectedItem = getTableModel.data?.firstWhere(
-                              (item) => item.name == newValue,
+                                  (item) => item.name == newValue,
                             );
                             tableId = selectedItem?.id.toString();
                           });
@@ -332,9 +361,9 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     margin: const EdgeInsets.all(10),
                     child: DropdownButtonFormField<String>(
                       value: (getWaiterModel.data?.any(
-                                (item) => item.name == selectedValueWaiter,
-                              ) ??
-                              false)
+                            (item) => item.name == selectedValueWaiter,
+                      ) ??
+                          false)
                           ? selectedValueWaiter
                           : null,
                       icon: const Icon(
@@ -386,9 +415,9 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     margin: const EdgeInsets.all(10),
                     child: DropdownButtonFormField<String>(
                       value: (getUserModel.data?.any(
-                                (item) => item.name == selectedValueUser,
-                              ) ??
-                              false)
+                            (item) => item.name == selectedValueUser,
+                      ) ??
+                          false)
                           ? selectedValueUser
                           : null,
                       icon: const Icon(
@@ -419,7 +448,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                           setState(() {
                             selectedValueUser = newValue;
                             final selectedItem = getUserModel.data?.firstWhere(
-                              (item) => item.name == newValue,
+                                  (item) => item.name == newValue,
                             );
                             userId = selectedItem?.id.toString();
                           });
@@ -429,6 +458,54 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                       },
                       hint: Text(
                         '-- Select Operator --',
+                        style: MyTextStyle.f14(
+                          blackColor,
+                          weight: FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // New Payment Mode Dropdown
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(10),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedPaymentMode,
+                      icon: const Icon(
+                        Icons.arrow_drop_down,
+                        color: appPrimaryColor,
+                      ),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: appPrimaryColor),
+                        ),
+                      ),
+                      items: paymentModes.map((mode) {
+                        return DropdownMenuItem<String>(
+                          value: mode,
+                          child: Text(
+                            mode,
+                            style: MyTextStyle.f14(
+                              blackColor,
+                              weight: FontWeight.normal,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedPaymentMode = newValue;
+                            paymentMode = newValue;
+                          });
+                          _onFilterChanged();
+                        }
+                      },
+                      hint: Text(
+                        '-- Select Mode --',
                         style: MyTextStyle.f14(
                           blackColor,
                           weight: FontWeight.normal,
@@ -463,6 +540,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
@@ -473,16 +551,19 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
                   ),
+
                   OrderViewView(
                     key: _tabKeys[2],
                     type: 'Parcel',
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
@@ -493,6 +574,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
@@ -503,6 +585,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
@@ -513,6 +596,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
                     selectedTableName: tableId,
                     selectedWaiterName: waiterId,
                     selectOperator: userId,
+                    selectedPaymentMode: paymentMode,
                     operatorShared: operatorId,
                     sharedOrderData: getOrderListTodayModel,
                     isLoading: isLoadingOrders,
@@ -609,7 +693,7 @@ class OrderTabViewViewState extends State<OrderTabViewView>
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 }

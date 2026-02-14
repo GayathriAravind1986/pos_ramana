@@ -12,6 +12,8 @@ import 'package:simple/ModelClass/Expense/postExpenseModel.dart';
 import 'package:simple/ModelClass/Expense/putExpenseModel.dart';
 import 'package:simple/ModelClass/HomeScreen/Category&Product/Get_category_model.dart';
 import 'package:simple/ModelClass/HomeScreen/Category&Product/Get_product_by_catId_model.dart';
+import 'package:simple/ModelClass/LastOrder/GetLastOrderModel.dart';
+import 'package:simple/ModelClass/LastOrder/PostOrderIdModel.dart';
 import 'package:simple/ModelClass/Order/Delete_order_model.dart';
 import 'package:simple/ModelClass/Order/Get_view_order_model.dart';
 import 'package:simple/ModelClass/Order/Post_generate_order_model.dart';
@@ -44,6 +46,95 @@ class ApiProvider {
     _dio = Dio(options);
   }
 
+  Future<PostOrderIdModel> changeOrderNumberAPI(String orderId) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+
+    final url = '${Constants.baseUrl}api/generate-order/changeordnum';
+
+    final Map<String, dynamic> body = {
+      "orderId": orderId,
+    };
+
+    try {
+      var dio = Dio();
+      var response = await dio.post(
+        url,
+        data: body,
+        options: Options(
+          validateStatus: (status) => true, // Allows handling of 400/500 errors
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return PostOrderIdModel.fromJson(response.data);
+      } else {
+        return PostOrderIdModel()
+          ..errorResponse = ErrorResponse(
+            message: response.data['message'] ?? 'Failed to update order number',
+            statusCode: response.statusCode,
+          );
+      }
+    } on DioException catch (dioError) {
+      return PostOrderIdModel()
+        ..errorResponse = ErrorResponse(
+          message: "Network Error: ${dioError.message}",
+          statusCode: dioError.response?.statusCode ?? 500,
+        );
+    } catch (error) {
+      return PostOrderIdModel()
+        ..errorResponse = ErrorResponse(
+          message: error.toString(),
+          statusCode: 500,
+        );
+    }
+  }
+
+  Future<GetLastOrderModel> getLastOrderAPI() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var token = sharedPreferences.getString("token");
+
+    final url = '${Constants.baseUrl}api/generate-order/getlastorder';
+
+    try {
+      var dio = Dio();
+      var response = await dio.get(
+        url,
+        options: Options(
+          validateStatus: (status) => true, // Allows us to handle 400/500 errors manually
+          headers: {
+            if (token != null) 'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return GetLastOrderModel.fromJson(response.data);
+      } else {
+        return GetLastOrderModel()
+          ..errorResponse = ErrorResponse(
+            message: response.data['message'] ?? 'Failed to retrieve last order',
+            statusCode: response.statusCode,
+          );
+      }
+    } on DioException catch (dioError) {
+      return GetLastOrderModel()..errorResponse = ErrorResponse(
+        message: "Network Error: ${dioError.message}",
+        statusCode: dioError.response?.statusCode ?? 500,
+      );
+    } catch (error) {
+      // Handle unexpected code errors
+      return GetLastOrderModel()..errorResponse = ErrorResponse(
+        message: error.toString(),
+        statusCode: 500,
+      );
+    }
+  }
   /// LoginWithOTP API Integration
   Future<PostLoginModel> loginAPI(
     String email,
@@ -446,15 +537,24 @@ class ApiProvider {
       String? toDate,
       String? tableId,
       String? waiterId,
-      String? operator) async {
+      String? operator,
+      String? paymentMode
+      ) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     var token = sharedPreferences.getString("token");
-    debugPrint(
-        "baseUrlOrder:${Constants.baseUrl}api/generate-order?from_date=$fromDate&to_date=$toDate&tableNo=$tableId&waiter=$waiterId&operator=$operator");
+
+    String url = '${Constants.baseUrl}api/generate-order?from_date=$fromDate&to_date=$toDate&tableNo=$tableId&waiter=$waiterId&operator=$operator';
+
+    if (paymentMode != null && paymentMode.isNotEmpty) {
+      url += '&paymentMethod=$paymentMode';
+    }
+
+    debugPrint("baseUrlOrder:$url");
+
     try {
       var dio = Dio();
       var response = await dio.request(
-        '${Constants.baseUrl}api/generate-order?from_date=$fromDate&to_date=$toDate&tableNo=$tableId&waiter=$waiterId&operator=$operator',
+        url,
         options: Options(
           method: 'GET',
           headers: {
@@ -465,7 +565,7 @@ class ApiProvider {
       if (response.statusCode == 200 && response.data != null) {
         if (response.data['success'] == true) {
           GetOrderListTodayModel getOrderListTodayResponse =
-              GetOrderListTodayModel.fromJson(response.data);
+          GetOrderListTodayModel.fromJson(response.data);
           return getOrderListTodayResponse;
         }
       } else {
@@ -490,15 +590,24 @@ class ApiProvider {
 
   /// ReportToday - Fetch API Integration
   Future<GetReportModel> getReportTodayAPI(String? fromDate, String? toDate,
-      String? tableId, String? waiterId, String? operatorId) async {
+      String? tableId, String? waiterId, String? operatorId, String? paymentMethod) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     var token = sharedPreferences.getString("token");
-    debugPrint(
-        "baseUrlReport:'${Constants.baseUrl}api/generate-order/sales-reportwithordertype?from_date=$fromDate&to_date=$toDate&limit=200&tableNo=$tableId&waiter=$waiterId&operator=$operatorId");
+
+    // Build URL with all parameters
+    String url = '${Constants.baseUrl}api/generate-order/sales-reportwithordertype?from_date=$fromDate&to_date=$toDate&limit=200&tableNo=$tableId&waiter=$waiterId&operator=$operatorId';
+
+    // Add payment method if selected
+    if (paymentMethod != null && paymentMethod.isNotEmpty) {
+      url += '&paymentMethod=$paymentMethod';
+    }
+
+    debugPrint("baseUrlReport:'$url");
+
     try {
       var dio = Dio();
       var response = await dio.request(
-        '${Constants.baseUrl}api/generate-order/sales-reportwithordertype?from_date=$fromDate&to_date=$toDate&limit=200&tableNo=$tableId&waiter=$waiterId&operator=$operatorId',
+        url,
         options: Options(
           method: 'GET',
           headers: {
@@ -506,10 +615,11 @@ class ApiProvider {
           },
         ),
       );
+
       if (response.statusCode == 200 && response.data != null) {
         if (response.data['success'] == true) {
           GetReportModel getReportListTodayResponse =
-              GetReportModel.fromJson(response.data);
+          GetReportModel.fromJson(response.data);
           return getReportListTodayResponse;
         }
       } else {

@@ -9,8 +9,9 @@ class OrderTodayList extends OrderTodayEvent {
   String tableId;
   String waiterId;
   String userId;
+  String paymentMode; // Added payment mode
   OrderTodayList(
-      this.fromDate, this.toDate, this.tableId, this.waiterId, this.userId);
+      this.fromDate, this.toDate, this.tableId, this.waiterId, this.userId, this.paymentMode);
 }
 
 class DeleteOrder extends OrderTodayEvent {
@@ -41,8 +42,13 @@ class OrderTodayBloc extends Bloc<OrderTodayEvent, dynamic> {
   OrderTodayBloc() : super(dynamic) {
     on<OrderTodayList>((event, emit) async {
       await ApiProvider()
-          .getOrderTodayAPI(event.fromDate, event.toDate, event.tableId,
-              event.waiterId, event.userId)
+          .getOrderTodayAPI(
+          event.fromDate,
+          event.toDate,
+          event.tableId,
+          event.waiterId,
+          event.userId,
+          event.paymentMode) // Added paymentMode parameter
           .then((value) {
         emit(value);
       }).catchError((error) {

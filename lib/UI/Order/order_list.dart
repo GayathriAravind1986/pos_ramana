@@ -39,6 +39,7 @@ class OrderView extends StatelessWidget {
   String? selectedWaiterName;
   String? selectOperator;
   String? operatorShared;
+  String? selectedPaymentMode; // Added this
   final GetOrderListTodayModel? sharedOrderData;
   final bool isLoading;
 
@@ -50,6 +51,7 @@ class OrderView extends StatelessWidget {
     this.selectedWaiterName,
     this.selectOperator,
     this.operatorShared,
+    this.selectedPaymentMode, // Added this
     this.sharedOrderData,
     this.isLoading = false,
   });
@@ -63,6 +65,7 @@ class OrderView extends StatelessWidget {
       selectedWaiterName: selectedWaiterName,
       selectOperator: selectOperator,
       operatorShared: operatorShared,
+      selectedPaymentMode: selectedPaymentMode, // Pass it to the StatefulWidget
       sharedOrderData: sharedOrderData,
       isLoading: isLoading,
     );
@@ -75,6 +78,7 @@ class OrderViewView extends StatefulWidget {
   String? selectedWaiterName;
   String? selectOperator;
   String? operatorShared;
+  String? selectedPaymentMode; // Added this
 
   final GetOrderListTodayModel? sharedOrderData;
   final bool isLoading;
@@ -86,6 +90,7 @@ class OrderViewView extends StatefulWidget {
     this.selectedWaiterName,
     this.selectOperator,
     this.operatorShared,
+    this.selectedPaymentMode, // Added this
     this.sharedOrderData,
     this.isLoading = false,
   });
@@ -99,9 +104,9 @@ class OrderViewViewState extends State<OrderViewView> {
   DeleteOrderModel deleteOrderModel = DeleteOrderModel();
   GetViewOrderModel getViewOrderModel = GetViewOrderModel();
   GetStockMaintanencesModel getStockMaintanencesModel =
-      GetStockMaintanencesModel();
+  GetStockMaintanencesModel();
   UpdateGenerateOrderModel updateGenerateOrderModel =
-      UpdateGenerateOrderModel();
+  UpdateGenerateOrderModel();
   final TextEditingController ipController = TextEditingController();
   final TextEditingController tipController = TextEditingController();
   String? errorMessage;
@@ -118,9 +123,15 @@ class OrderViewViewState extends State<OrderViewView> {
   void refreshOrders() {
     if (!mounted || !context.mounted) return;
     context.read<OrderTodayBloc>().add(
-          OrderTodayList(todayDate, todayDate, widget.selectedTableName ?? "",
-              widget.selectedWaiterName ?? "", widget.selectOperator ?? ""),
-        );
+      OrderTodayList(
+        todayDate,
+        todayDate,
+        widget.selectedTableName ?? "",
+        widget.selectedWaiterName ?? "",
+        widget.selectOperator ?? "",
+        widget.selectedPaymentMode ?? "", // Added paymentMode parameter
+      ),
+    );
   }
 
   String formatInvoiceDate(String? dateStr) {
@@ -300,19 +311,19 @@ class OrderViewViewState extends State<OrderViewView> {
       );
       List<Map<String, dynamic>> items = updateGenerateOrderModel.order!.items!
           .map((e) => {
-                'name': e.name,
-                'qty': e.quantity,
-                'price': (e.unitPrice ?? 0).toDouble(),
-                'total': ((e.quantity ?? 0) * (e.unitPrice ?? 0)).toDouble(),
-              })
+        'name': e.name,
+        'qty': e.quantity,
+        'price': (e.unitPrice ?? 0).toDouble(),
+        'total': ((e.quantity ?? 0) * (e.unitPrice ?? 0)).toDouble(),
+      })
           .toList();
       List<Map<String, dynamic>> kotItems =
-          updateGenerateOrderModel.invoice!.kot!
-              .map((e) => {
-                    'name': e.name,
-                    'qty': e.quantity,
-                  })
-              .toList();
+      updateGenerateOrderModel.invoice!.kot!
+          .map((e) => {
+        'name': e.name,
+        'qty': e.quantity,
+      })
+          .toList();
       // double _safeConvertToDouble(dynamic value) {
       //   if (value == null) return 0.0;
       //   if (value is num) return value.toDouble();
@@ -321,25 +332,25 @@ class OrderViewViewState extends State<OrderViewView> {
       // }
 
       List<Map<String, dynamic>> finalTax =
-          updateGenerateOrderModel.invoice!.finalTaxes!
-              .map((e) => {
-                    'name': e.name,
-                    'amt': double.parse(e.amount.toString()),
-                  })
-              .toList();
+      updateGenerateOrderModel.invoice!.finalTaxes!
+          .map((e) => {
+        'name': e.name,
+        'amt': double.parse(e.amount.toString()),
+      })
+          .toList();
       String businessName =
           updateGenerateOrderModel.invoice!.businessName ?? '';
       String address = updateGenerateOrderModel.invoice!.address ?? '';
       String gst = updateGenerateOrderModel.invoice!.gstNumber ?? '';
       double taxPercent =
-          (updateGenerateOrderModel.order!.tax ?? 0.0).toDouble();
+      (updateGenerateOrderModel.order!.tax ?? 0.0).toDouble();
       String orderNumber = updateGenerateOrderModel.order!.orderNumber ?? 'N/A';
       String paymentMethod = updateGenerateOrderModel.invoice!.paidBy ?? '';
       String phone = updateGenerateOrderModel.invoice!.phone ?? '';
       double subTotal =
-          (updateGenerateOrderModel.invoice!.subtotal ?? 0.0).toDouble();
+      (updateGenerateOrderModel.invoice!.subtotal ?? 0.0).toDouble();
       double total =
-          (updateGenerateOrderModel.invoice!.total ?? 0.0).toDouble();
+      (updateGenerateOrderModel.invoice!.total ?? 0.0).toDouble();
       String orderType = updateGenerateOrderModel.order!.orderType ?? '';
       String orderStatus = updateGenerateOrderModel.invoice!.orderStatus ?? '';
       String tableName = orderType == 'LINE' || orderType == 'AC'
@@ -358,7 +369,7 @@ class OrderViewViewState extends State<OrderViewView> {
         builder: (_) => Dialog(
           backgroundColor: Colors.transparent,
           insetPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+          const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
           child: Stack(
             children: [
               Padding(
@@ -552,210 +563,163 @@ class OrderViewViewState extends State<OrderViewView> {
     }
 
     final filteredOrders = getOrderListTodayModel.data?.where((order) {
-          if (widget.type == "All") return true;
-          return order.orderType?.toUpperCase() == type;
-        }).toList() ??
+      if (widget.type == "All") return true;
+      return order.orderType?.toUpperCase() == type;
+    }).toList() ??
         [];
 
     Widget mainContainer() {
       return widget.isLoading
           ? Container(
-              padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).size.height * 0.1),
-              alignment: Alignment.center,
-              child: const SpinKitChasingDots(color: appPrimaryColor, size: 30))
+          padding: EdgeInsets.only(
+              top: MediaQuery.of(context).size.height * 0.1),
+          alignment: Alignment.center,
+          child: const SpinKitChasingDots(color: appPrimaryColor, size: 30))
           : getOrderListTodayModel.data == null ||
-                  getOrderListTodayModel.data == [] ||
-                  getOrderListTodayModel.data!.isEmpty
-              ? Container(
-                  padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).size.height * 0.1),
-                  alignment: Alignment.center,
-                  child: Text(
-                    "No Orders Today !!!",
-                    style: MyTextStyle.f16(
-                      greyColor,
-                      weight: FontWeight.w500,
-                    ),
-                  ))
-              : Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    itemCount: filteredOrders.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.8,
-                    ),
-                    itemBuilder: (context, index) {
-                      final order = filteredOrders[index];
-                      final payment = order.payments?.isNotEmpty == true
-                          ? order.payments!.first
-                          : null;
+          getOrderListTodayModel.data == [] ||
+          getOrderListTodayModel.data!.isEmpty
+          ? Container(
+          padding: EdgeInsets.only(
+              top: MediaQuery.of(context).size.height * 0.1),
+          alignment: Alignment.center,
+          child: Text(
+            "No Orders Today !!!",
+            style: MyTextStyle.f16(
+              greyColor,
+              weight: FontWeight.w500,
+            ),
+          ))
+          : Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.builder(
+          itemCount: filteredOrders.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.8,
+          ),
+          itemBuilder: (context, index) {
+            final order = filteredOrders[index];
+            final payment = order.payments?.isNotEmpty == true
+                ? order.payments!.first
+                : null;
 
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 🔹 Order ID & Total
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      "Order ID: ${order.orderNumber ?? '--'}",
-                                      style: MyTextStyle.f14(appPrimaryColor,
-                                          weight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  Text(
-                                    "₹${order.total?.toStringAsFixed(2) ?? '0.00'}",
-                                    style: MyTextStyle.f14(appPrimaryColor,
-                                        weight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    "Time: ${formatTime(order.invoice?.date)}",
-                                  ),
-                                  Text(
-                                    payment?.paymentMethod != null &&
-                                            payment!.paymentMethod!.isNotEmpty
-                                        ? "Payment: ${payment.paymentMethod}: ₹${payment.amount?.toStringAsFixed(2) ?? '0.00'}"
-                                        : "Payment: N/A",
-                                    style: MyTextStyle.f12(greyColor),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text("Type: ${order.orderType ?? '--'}"),
-                                  Text(
-                                    "Status: ${order.orderStatus}",
-                                    style: TextStyle(
-                                      color: order.orderStatus == 'COMPLETED'
-                                          ? greenColor
-                                          : orangeColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 6),
-                              Text("Table: ${order.tableName ?? 'N/A'}"),
-                              const Spacer(),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        padding: EdgeInsets.zero,
-                                        constraints: BoxConstraints(),
-                                        icon: Icon(Icons.remove_red_eye,
-                                            color: appPrimaryColor, size: 20),
-                                        onPressed: () {
-                                          setState(() {
-                                            view = true;
-                                          });
-                                          context
-                                              .read<OrderTodayBloc>()
-                                              .add(ViewOrder(order.id));
-                                        },
-                                      ),
-                                      SizedBox(width: 4),
-                                      // if ((widget.operatorShared ==
-                                      //             widget.selectOperator ||
-                                      //         widget.selectOperator == null ||
-                                      //         widget.selectOperator == "") &&
-                                      //     order.orderStatus != 'COMPLETED')
-                                      //   IconButton(
-                                      //     padding: EdgeInsets.zero,
-                                      //     constraints: BoxConstraints(),
-                                      //     icon: Icon(Icons.edit,
-                                      //         color: appPrimaryColor, size: 20),
-                                      //     onPressed: () {
-                                      //       setState(() {
-                                      //         view = false;
-                                      //       });
-                                      //       context
-                                      //           .read<OrderTodayBloc>()
-                                      //           .add(ViewOrder(order.id));
-                                      //     },
-                                      //   ),
-                                      // SizedBox(width: 4),
-                                      // IconButton(
-                                      //   padding: EdgeInsets.zero,
-                                      //   constraints: BoxConstraints(),
-                                      //   icon: Icon(Icons.print_outlined,
-                                      //       color: appPrimaryColor, size: 20),
-                                      //   onPressed: () {
-                                      //     setState(() {
-                                      //       view = true;
-                                      //     });
-                                      //     context
-                                      //         .read<OrderTodayBloc>()
-                                      //         .add(ViewOrder(order.id));
-                                      //   },
-                                      // ),
-                                      if (order.orderStatus != 'COMPLETED')
-                                        IconButton(
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          icon: Icon(Icons.check_circle,
-                                              color: appPrimaryColor, size: 20),
-                                          onPressed: () {
-                                            setState(() {
-                                              view = false;
-                                            });
-                                            context
-                                                .read<OrderTodayBloc>()
-                                                .add(ViewOrder(order.id));
-                                          },
-                                        ),
-                                      // SizedBox(width: 4),
-                                      // if (order.orderStatus != 'COMPLETED')
-                                      //   IconButton(
-                                      //     padding: EdgeInsets.zero,
-                                      //     constraints: BoxConstraints(),
-                                      //     icon: Icon(Icons.delete,
-                                      //         color: appPrimaryColor, size: 20),
-                                      //     onPressed: () {
-                                      //       context
-                                      //           .read<OrderTodayBloc>()
-                                      //           .add(DeleteOrder(order.id));
-                                      //     },
-                                      //   ),
-                                    ],
-                                  ),
-                                ],
-                              )
-                            ],
+            return Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 🔹 Order ID & Total
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "Order ID: ${order.orderNumber ?? '--'}",
+                            style: MyTextStyle.f14(appPrimaryColor,
+                                weight: FontWeight.bold),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                );
+                        Text(
+                          "₹${order.total?.toStringAsFixed(2) ?? '0.00'}",
+                          style: MyTextStyle.f14(appPrimaryColor,
+                              weight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Time: ${formatTime(order.invoice?.date)}",
+                        ),
+                        Text(
+                          payment?.paymentMethod != null &&
+                              payment!.paymentMethod!.isNotEmpty
+                              ? "Payment: ${payment.paymentMethod}: ₹${payment.amount?.toStringAsFixed(2) ?? '0.00'}"
+                              : "Payment: N/A",
+                          style: MyTextStyle.f12(greyColor),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Type: ${order.orderType ?? '--'}"),
+                        Text(
+                          "Status: ${order.orderStatus}",
+                          style: TextStyle(
+                            color: order.orderStatus == 'COMPLETED'
+                                ? greenColor
+                                : orangeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+                    Text("Table: ${order.tableName ?? 'N/A'}"),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              icon: Icon(Icons.remove_red_eye,
+                                  color: appPrimaryColor, size: 20),
+                              onPressed: () {
+                                setState(() {
+                                  view = true;
+                                });
+                                context
+                                    .read<OrderTodayBloc>()
+                                    .add(ViewOrder(order.id));
+                              },
+                            ),
+                            SizedBox(width: 4),
+                            if (order.orderStatus != 'COMPLETED')
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(Icons.check_circle,
+                                    color: appPrimaryColor, size: 20),
+                                onPressed: () {
+                                  setState(() {
+                                    view = false;
+                                  });
+                                  context
+                                      .read<OrderTodayBloc>()
+                                      .add(ViewOrder(order.id));
+                                },
+                              ),
+                          ],
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
     }
 
     return BlocBuilder<OrderTodayBloc, dynamic>(
@@ -774,7 +738,7 @@ class OrderViewViewState extends State<OrderViewView> {
             showToast("${deleteOrderModel.message}", context, color: true);
             context
                 .read<OrderTodayBloc>()
-                .add(OrderTodayList(todayDate, todayDate, "", "", ""));
+                .add(OrderTodayList(todayDate, todayDate, "", "", "", ""));
           } else {
             showToast("${deleteOrderModel.message}", context, color: false);
           }
@@ -806,22 +770,6 @@ class OrderViewViewState extends State<OrderViewView> {
                   builder: (context) => ThermalReceiptDialog(getViewOrderModel),
                 );
               } else {
-                // Navigator.of(context)
-                //     .pushAndRemoveUntil(
-                //         MaterialPageRoute(
-                //             builder: (context) => DashBoardScreen(
-                //                   selectTab: 0,
-                //                   existingOrder: getViewOrderModel,
-                //                   isEditingOrder: true,
-                //                 )),
-                //         (Route<dynamic> route) => false)
-                //     .then((value) {
-                //   if (value == true) {
-                //     context
-                //         .read<OrderTodayBloc>()
-                //         .add(OrderTodayList(todayDate, todayDate, "", "", ""));
-                //   }
-                // });
                 showDialog(
                     context: context,
                     builder: (context2) {
@@ -840,7 +788,7 @@ class OrderViewViewState extends State<OrderViewView> {
                                     content: SingleChildScrollView(
                                       child: Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize
                                             .min, // important for dialog
                                         children: [
@@ -863,42 +811,42 @@ class OrderViewViewState extends State<OrderViewView> {
                                                   onTap: () {
                                                     setState(() {
                                                       selectedFullPaymentMethod =
-                                                          "Cash";
+                                                      "Cash";
                                                     });
                                                   },
                                                   child: PaymentOption(
                                                     icon: Icons.money,
                                                     label: "Cash",
                                                     selected:
-                                                        selectedFullPaymentMethod ==
-                                                            "Cash",
+                                                    selectedFullPaymentMethod ==
+                                                        "Cash",
                                                   ),
                                                 ),
                                                 GestureDetector(
                                                   onTap: () {
                                                     setState(() {
                                                       selectedFullPaymentMethod =
-                                                          "Card";
+                                                      "Card";
                                                     });
                                                   },
                                                   child: PaymentOption(
                                                     icon: Icons.credit_card,
                                                     label: "Card",
                                                     selected:
-                                                        selectedFullPaymentMethod ==
-                                                            "Card",
+                                                    selectedFullPaymentMethod ==
+                                                        "Card",
                                                   ),
                                                 ),
                                                 GestureDetector(
                                                   onTap: () {
                                                     setState(() {
                                                       selectedFullPaymentMethod =
-                                                          "UPI";
+                                                      "UPI";
                                                     });
 
                                                     if (getStockMaintanencesModel
-                                                                .data?.image !=
-                                                            null &&
+                                                        .data?.image !=
+                                                        null &&
                                                         getStockMaintanencesModel
                                                             .data!
                                                             .image!
@@ -909,11 +857,11 @@ class OrderViewViewState extends State<OrderViewView> {
                                                         builder: (context) {
                                                           return AlertDialog(
                                                             shape:
-                                                                RoundedRectangleBorder(
+                                                            RoundedRectangleBorder(
                                                               borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          12),
+                                                              BorderRadius
+                                                                  .circular(
+                                                                  12),
                                                             ),
                                                             title: const Text(
                                                                 "Scan to Pay"),
@@ -921,17 +869,17 @@ class OrderViewViewState extends State<OrderViewView> {
                                                               width: 250,
                                                               height: 250,
                                                               child:
-                                                                  Image.network(
+                                                              Image.network(
                                                                 getStockMaintanencesModel
                                                                     .data!
                                                                     .image!,
                                                                 fit: BoxFit
                                                                     .contain,
                                                                 errorBuilder: (context,
-                                                                        error,
-                                                                        stackTrace) =>
-                                                                    const Text(
-                                                                        "Failed to load QR"),
+                                                                    error,
+                                                                    stackTrace) =>
+                                                                const Text(
+                                                                    "Failed to load QR"),
                                                               ),
                                                             ),
                                                             actions: [
@@ -941,11 +889,11 @@ class OrderViewViewState extends State<OrderViewView> {
                                                                       context);
                                                                 },
                                                                 child:
-                                                                    const Text(
+                                                                const Text(
                                                                   "Close",
                                                                   style: TextStyle(
                                                                       color:
-                                                                          appPrimaryColor),
+                                                                      appPrimaryColor),
                                                                 ),
                                                               ),
                                                             ],
@@ -963,8 +911,8 @@ class OrderViewViewState extends State<OrderViewView> {
                                                     icon: Icons.qr_code,
                                                     label: "UPI",
                                                     selected:
-                                                        selectedFullPaymentMethod ==
-                                                            "UPI",
+                                                    selectedFullPaymentMethod ==
+                                                        "UPI",
                                                   ),
                                                 ),
                                               ],
@@ -976,116 +924,116 @@ class OrderViewViewState extends State<OrderViewView> {
                                     actions: [
                                       Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        MainAxisAlignment.center,
                                         children: [
                                           completeLoad
                                               ? SpinKitCircle(
-                                                  color: appPrimaryColor,
-                                                  size: 30)
+                                              color: appPrimaryColor,
+                                              size: 30)
                                               : ElevatedButton(
-                                                  onPressed: () {
-                                                    if (selectedFullPaymentMethod
-                                                            .isEmpty ||
-                                                        (selectedFullPaymentMethod != "Cash" &&
-                                                            selectedFullPaymentMethod !=
-                                                                "Card" &&
-                                                            selectedFullPaymentMethod !=
-                                                                "UPI")) {
-                                                      showToast(
-                                                          "Select any one of the payment method",
-                                                          context,
-                                                          color: false);
-                                                      return;
-                                                    }
-                                                    if (selectedFullPaymentMethod == "Cash" ||
-                                                        selectedFullPaymentMethod ==
-                                                            "Card" ||
-                                                        selectedFullPaymentMethod ==
-                                                            "UPI") {
-                                                      List<Map<String, dynamic>>
-                                                          payments = [];
-                                                      payments = [
-                                                        {
-                                                          "amount":
-                                                              (getViewOrderModel
-                                                                          .data!
-                                                                          .total ??
-                                                                      0.0)
-                                                                  .toDouble(),
-                                                          "balanceAmount": 0,
-                                                          "method":
-                                                              selectedFullPaymentMethod
-                                                                  .toUpperCase(),
-                                                        }
-                                                      ];
-                                                      final orderPayload =
-                                                          buildOrderWaitListPayload(
-                                                        getViewOrderModel:
-                                                            getViewOrderModel,
-                                                        tableId:
-                                                            getViewOrderModel
-                                                                .data!.tableNo,
-                                                        waiterId:
-                                                            getViewOrderModel
-                                                                .data!.waiter,
-                                                        orderStatus:
-                                                            'COMPLETED',
-                                                        orderType:
-                                                            getViewOrderModel
-                                                                .data!.orderType
-                                                                .toString(),
-                                                        discountAmount:
-                                                            getViewOrderModel
-                                                                .data!
-                                                                .discountAmount!
-                                                                .toStringAsFixed(
-                                                                    2),
-                                                        isDiscountApplied:
-                                                            getViewOrderModel
-                                                                        .data!
-                                                                        .isDiscountApplied ==
-                                                                    true
-                                                                ? true
-                                                                : false,
-                                                        tipAmount:
-                                                            tipController.text,
-                                                        payments: payments,
-                                                      );
-                                                      debugPrint(
-                                                          "payloadComplete:${jsonEncode(orderPayload)}");
-                                                      setState(() {
-                                                        completeLoad = true;
-                                                      });
+                                            onPressed: () {
+                                              if (selectedFullPaymentMethod
+                                                  .isEmpty ||
+                                                  (selectedFullPaymentMethod != "Cash" &&
+                                                      selectedFullPaymentMethod !=
+                                                          "Card" &&
+                                                      selectedFullPaymentMethod !=
+                                                          "UPI")) {
+                                                showToast(
+                                                    "Select any one of the payment method",
+                                                    context,
+                                                    color: false);
+                                                return;
+                                              }
+                                              if (selectedFullPaymentMethod == "Cash" ||
+                                                  selectedFullPaymentMethod ==
+                                                      "Card" ||
+                                                  selectedFullPaymentMethod ==
+                                                      "UPI") {
+                                                List<Map<String, dynamic>>
+                                                payments = [];
+                                                payments = [
+                                                  {
+                                                    "amount":
+                                                    (getViewOrderModel
+                                                        .data!
+                                                        .total ??
+                                                        0.0)
+                                                        .toDouble(),
+                                                    "balanceAmount": 0,
+                                                    "method":
+                                                    selectedFullPaymentMethod
+                                                        .toUpperCase(),
+                                                  }
+                                                ];
+                                                final orderPayload =
+                                                buildOrderWaitListPayload(
+                                                  getViewOrderModel:
+                                                  getViewOrderModel,
+                                                  tableId:
+                                                  getViewOrderModel
+                                                      .data!.tableNo,
+                                                  waiterId:
+                                                  getViewOrderModel
+                                                      .data!.waiter,
+                                                  orderStatus:
+                                                  'COMPLETED',
+                                                  orderType:
+                                                  getViewOrderModel
+                                                      .data!.orderType
+                                                      .toString(),
+                                                  discountAmount:
+                                                  getViewOrderModel
+                                                      .data!
+                                                      .discountAmount!
+                                                      .toStringAsFixed(
+                                                      2),
+                                                  isDiscountApplied:
+                                                  getViewOrderModel
+                                                      .data!
+                                                      .isDiscountApplied ==
+                                                      true
+                                                      ? true
+                                                      : false,
+                                                  tipAmount:
+                                                  tipController.text,
+                                                  payments: payments,
+                                                );
+                                                debugPrint(
+                                                    "payloadComplete:${jsonEncode(orderPayload)}");
+                                                setState(() {
+                                                  completeLoad = true;
+                                                });
 
-                                                      context
-                                                          .read<
-                                                              OrderTodayBloc>()
-                                                          .add(UpdateOrder(
-                                                              jsonEncode(
-                                                                  orderPayload),
-                                                              getViewOrderModel
-                                                                  .data!.id));
-                                                    }
-                                                  },
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    backgroundColor:
-                                                        appPrimaryColor,
-                                                    minimumSize:
-                                                        const Size(0, 50),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              30),
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    "Complete Order",
-                                                    style: TextStyle(
-                                                        color: whiteColor),
-                                                  ),
-                                                ),
+                                                context
+                                                    .read<
+                                                    OrderTodayBloc>()
+                                                    .add(UpdateOrder(
+                                                    jsonEncode(
+                                                        orderPayload),
+                                                    getViewOrderModel
+                                                        .data!.id));
+                                              }
+                                            },
+                                            style:
+                                            ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                              appPrimaryColor,
+                                              minimumSize:
+                                              const Size(0, 50),
+                                              shape:
+                                              RoundedRectangleBorder(
+                                                borderRadius:
+                                                BorderRadius.circular(
+                                                    30),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              "Complete Order",
+                                              style: TextStyle(
+                                                  color: whiteColor),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],
@@ -1168,13 +1116,14 @@ class OrderViewViewState extends State<OrderViewView> {
             Navigator.pop(context);
             printUpdateOrderReceipt();
             context.read<OrderTodayBloc>().add(
-                  OrderTodayList(
-                      todayDate,
-                      todayDate,
-                      widget.selectedTableName ?? "",
-                      widget.selectedWaiterName ?? "",
-                      widget.selectOperator ?? ""),
-                );
+              OrderTodayList(
+                  todayDate,
+                  todayDate,
+                  widget.selectedTableName ?? "",
+                  widget.selectedWaiterName ?? "",
+                  widget.selectOperator ?? "",
+                  widget.selectedPaymentMode ?? ""), // Added paymentMode
+            );
             // if (shouldPrintReceipt == true &&
             //     updateGenerateOrderModel.message != null) {
             //   printUpdateOrderReceipt();
@@ -1200,7 +1149,7 @@ class OrderViewViewState extends State<OrderViewView> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
     );
   }
 }
